@@ -9,7 +9,7 @@ export class TripsController {
 
   @Post()
   create(@Body() createTripDto: CreateTripDto) {
-    return this.tripsService.create(createTripDto);
+    return this.tripsService.createTrip(createTripDto);
   }
 
   @Get()
@@ -19,16 +19,16 @@ export class TripsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.tripsService.findOne(+id);
+    return this.tripsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTripDto: UpdateTripDto) {
-    return this.tripsService.update(+id, updateTripDto);
+  updateTrip(@Param('id') id: string, @Body() updateTripDto: UpdateTripDto) {
+    return this.tripsService.updateTrip(id, updateTripDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.tripsService.remove(+id);
+    return this.tripsService.deleteTrip(id);
   }
 }
