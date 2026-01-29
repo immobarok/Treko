@@ -1,0 +1,233 @@
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat  = "cjs"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TourType {
+  SOLO
+  FAMILY
+}
+
+enum TripLabel {
+  SALE_ON
+  FEATURED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  ONLINE_PAYMENT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+// --- Models ---
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  password  String   @map("password")
+  fullName  String?  @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  role      Role     @default(USER)
+
+  // Relations
+  reviews   Review[]  //
+  bookings  Booking[] //
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("users")
+}
+
+model Trip {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  description     String         @db.Text
+  location        String
+  duration        String
+  tour_type       TourType
+  label           TripLabel?
+  
+  // Pricing
+  price           Decimal        @db.Decimal(10, 2)
+  discount_price  Decimal?       @db.Decimal(10, 2)
+  discount_percent Int?          //
+
+  // About Tour Package
+  accommodation   String   
+  meals           String   
+  transportation  String   
+  group_size      String   
+  language        String   
+  age_range       String   
+  season          String   
+  category        String   
+
+  // Additional Details
+  brochure_url    String?  
+  additional_info String?        @db.Text 
+
+  // Relations
+  images          TripImage[]
+  highlights      Highlight[]      //
+  itineraries     Itinerary[]      //
+  features        PackageFeature[] //
+  faqs            Faq[]            //
+  reviews         Review[]         //
+  availabilities  TripAvailability[] //
+  additionalServices AdditionalService[] //
+  bookings        Booking[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([category])
+  @@index([tour_type])
+  @@map("trips")
+}
+
+model TripImage {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  url    String
+  tripId String @db.Uuid
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("trip_images")
+}
+
+model Itinerary {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dayNumber   Int     //
+  location    String  //
+  title       String  //
+  description String? @db.Text
+  tripId      String  @db.Uuid
+  trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("itineraries")
+}
+
+model PackageFeature {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text      String  //
+  isInclude Boolean // true for Include, false for Exclude
+  tripId    String  @db.Uuid
+  trip      Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("package_features")
+}
+
+model Highlight {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text   String //
+  tripId String @db.Uuid
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("highlights")
+}
+
+model Faq {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question String //
+  answer   String @db.Text
+  tripId   String @db.Uuid
+  trip     Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("faqs")
+}
+
+model Review {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  comment     String @db.Text //
+  rating      Int    
+  overall     Float  
+  transport   Float
+  food        Float
+  hospitality Float
+  destination Float
+  
+  userId      String @db.Uuid
+  user        User   @relation(fields: [userId], references: [id])
+  tripId      String @db.Uuid
+  trip        Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@map("reviews")
+}
+
+model TripAvailability {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date          DateTime //
+  maxTravelers  Int      
+  bookedCount   Int      @default(0) 
+  adultPrice    Decimal  @db.Decimal(10, 2) //
+  childPrice    Decimal  @db.Decimal(10, 2) //
+
+  tripId        String   @db.Uuid
+  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("trip_availabilities")
+}
+
+model AdditionalService {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String  //
+  price       Decimal @db.Decimal(10, 2)
+  unit        String  //
+  
+  tripId      String  @db.Uuid
+  trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("additional_services")
+}
+
+model Booking {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  email         String        
+  firstName     String        @map("first_name")
+  lastName      String        @map("last_name")
+  phone         String?       
+  country       String        
+  address       String        @db.Text
+  city          String        
+  state         String        
+  zipCode       String        @map("zip_code")
+
+  travelDate    DateTime      @map("travel_date")
+  adults        Int           @default(1)
+  children      Int           @default(0)
+  
+  subtotal      Decimal       @db.Decimal(10, 2)
+  totalPrice    Decimal       @db.Decimal(10, 2) @map("total_price")
+
+  paymentMethod PaymentMethod @map("payment_method")
+  status        BookingStatus @default(PENDING)
+  orderNote     String?       @db.Text
+
+  userId        String?       @db.Uuid
+  user          User?         @relation(fields: [userId], references: [id])
+  tripId        String        @db.Uuid
+  trip          Trip          @relation(fields: [tripId], references: [id])
+
+  createdAt     DateTime      @default(now()) @db.Timestamptz
+
+  @@map("bookings")
+}

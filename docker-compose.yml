@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: nest_postgres
+    restart: no
+    environment:
+      POSTGRES_USER: nest
+      POSTGRES_PASSWORD: nest
+      POSTGRES_DB: nest
+    ports:
+      - '5090:5432'
+    volumes:
+      - nest_postgres:/var/lib/postgresql/data
+    networks:
+      - nest_network
+
+  redis:
+    image: redis:alpine
+    container_name: nest_redis
+    restart: unless-stopped
+    ports:
+      - '6389:6379'
+    # ADDED: --requirepass "nest" to the command list
+    command: redis-server --save 60 1 --loglevel warning --maxmemory-policy noeviction --requirepass nest
+    volumes:
+      - nest_redis:/data
+    networks:
+      - nest_network
+
+  bull-board:
+    image: deadly0/bull-board
+    container_name: nest_bull_board
+    ports:
+      - '2020:3000'
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=nest
+      - BULL_VERSION=BULLMQ
+    networks:
+      - nest_network
+    depends_on:
+      - redis
+
+networks:
+  nest_network:
+    driver: bridge
+
+volumes:
+  nest_postgres:
+    driver: local
+  nest_redis:
+    driver: local
