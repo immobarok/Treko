@@ -20,7 +20,6 @@ services:
     restart: unless-stopped
     ports:
       - '6389:6379'
-    # ADDED: --requirepass "nest" to the command list
     command: redis-server --save 60 1 --loglevel warning --maxmemory-policy noeviction --requirepass nest
     volumes:
       - nest_redis:/data
@@ -42,6 +41,22 @@ services:
     depends_on:
       - redis
 
+  # --- MinIO service ---
+  minio:
+    image: quay.io/minio/minio
+    container_name: nest_minio
+    ports:
+      - "9000:9000"     # API Port (For NestJS)
+      - "9001:9001"     # Console Port (For web interface)
+    environment:
+      MINIO_ROOT_USER: nestadmin
+      MINIO_ROOT_PASSWORD: nestpassword123
+    volumes:
+      - nest_minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - nest_network
+
 networks:
   nest_network:
     driver: bridge
@@ -50,4 +65,7 @@ volumes:
   nest_postgres:
     driver: local
   nest_redis:
+    driver: local
+  # MinIO data volume
+  nest_minio_data:
     driver: local
