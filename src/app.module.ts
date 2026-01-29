@@ -14,10 +14,10 @@ import { ResponseStandardizationInterceptor } from './common/interceptors/respon
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
-import { CommonModule } from './minio/common/common.module';
+import { MinioModule } from './common/minio/minio.module';
 
 @Module({
-  imports: [ContextModule, ConfigModule.forRoot(), AuthModule, CommonModule],
+  imports: [ContextModule, ConfigModule.forRoot(), AuthModule, MinioModule],
   controllers: [AppController],
   providers: [
     AppService,
