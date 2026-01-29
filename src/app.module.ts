@@ -15,9 +15,10 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { MinioModule } from './common/minio/minio.module';
+import { TripsModule } from './trips/trips.module';
 
 @Module({
-  imports: [ContextModule, ConfigModule.forRoot(), AuthModule, MinioModule],
+  imports: [ContextModule, ConfigModule.forRoot(), AuthModule, MinioModule, TripsModule],
   controllers: [AppController],
   providers: [
     AppService,
