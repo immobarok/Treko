@@ -6,10 +6,67 @@ import {
   IsEnum,
   ValidateNested,
   IsNotEmpty,
+  IsBoolean,
+  IsUrl,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TourType, TripLabel } from 'src/generated/prisma/enums';
 
+/**
+ * DTO for nested Highlights
+ */
+class HighlightDto {
+  @IsString()
+  @IsNotEmpty()
+  text: string;
+}
+
+/**
+ * DTO for nested Package Features (Includes/Excludes)
+ */
+class PackageFeatureDto {
+  @IsString()
+  @IsNotEmpty()
+  text: string;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  isInclude: boolean;
+}
+
+/**
+ * DTO for nested FAQs
+ */
+class FaqDto {
+  @IsString()
+  @IsNotEmpty()
+  question: string;
+
+  @IsString()
+  @IsNotEmpty()
+  answer: string;
+}
+
+/**
+ * DTO for nested Additional Services
+ */
+class AdditionalServiceDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  price: number;
+
+  @IsString()
+  @IsNotEmpty()
+  unit: string;
+}
+
+/**
+ * DTO for nested Itineraries
+ */
 class ItineraryDto {
   @IsNumber()
   @IsNotEmpty()
@@ -28,6 +85,9 @@ class ItineraryDto {
   description?: string;
 }
 
+/**
+ * DTO for nested Availability
+ */
 class AvailabilityDto {
   @Type(() => Date)
   @IsNotEmpty()
@@ -71,6 +131,7 @@ export class CreateTripDto {
   @IsEnum(TripLabel)
   label?: TripLabel;
 
+  // --- Pricing Fields ---
   @IsNumber()
   @IsNotEmpty()
   price: number;
@@ -83,6 +144,7 @@ export class CreateTripDto {
   @IsNumber()
   discount_percent?: number;
 
+  // --- Tour Details ---
   @IsString()
   @IsNotEmpty()
   accommodation: string;
@@ -94,10 +156,6 @@ export class CreateTripDto {
   @IsString()
   @IsNotEmpty()
   transportation: string;
-
-  @IsString()
-  @IsNotEmpty()
-  category: string;
 
   @IsString()
   @IsNotEmpty()
@@ -115,10 +173,31 @@ export class CreateTripDto {
   @IsNotEmpty()
   season: string;
 
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  // --- Additional Info ---
+  @IsOptional()
+  @IsString()
+  @IsUrl() // Ensures the brochure link is a valid URL
+  brochure_url?: string;
+
+  @IsOptional()
+  @IsString()
+  additional_info?: string;
+
+  // --- Nested Relational Data ---
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
   imageUrls: string[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HighlightDto)
+  @IsOptional()
+  highlights: HighlightDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -128,7 +207,25 @@ export class CreateTripDto {
 
   @IsArray()
   @ValidateNested({ each: true })
+  @Type(() => PackageFeatureDto)
+  @IsOptional()
+  features: PackageFeatureDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FaqDto)
+  @IsOptional()
+  faqs: FaqDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => AvailabilityDto)
   @IsOptional()
   availabilities: AvailabilityDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AdditionalServiceDto)
+  @IsOptional()
+  additionalServices: AdditionalServiceDto[];
 }

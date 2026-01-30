@@ -1,6 +1,6 @@
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ContextService } from './common/context/context.service';
 
@@ -15,6 +15,8 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api/v1');
+
+
 
   app.enableVersioning({
     type: VersioningType.URI,

@@ -14,35 +14,53 @@ export class TripsService {
   private readonly logger = new Logger(TripsService.name);
 
   constructor(private prisma: PrismaService) {}
-  async createTrip(cerateTripDto: CreateTripDto): Promise<TripEntity> {
+
+  /**
+   * 1. Create a Trip with all nested relational data
+   */
+  async createTrip(createTripDto: CreateTripDto): Promise<TripEntity> {
     try {
-      const { imageUrls, itineraries, availabilities, ...tripDetails } =
-        cerateTripDto;
+      const {
+        imageUrls,
+        itineraries,
+        availabilities,
+        highlights,
+        features,
+        faqs,
+        additionalServices,
+        ...tripDetails
+      } = createTripDto;
 
       const result = await this.prisma.$transaction(async (tx) => {
         return await tx.trip.create({
           data: {
             ...tripDetails,
+            // Create nested images from the provided URL array
             images: imageUrls?.length
-              ? {
-                  create: imageUrls.map((url) => ({ url })),
-                }
+              ? { create: imageUrls.map((url) => ({ url })) }
               : undefined,
+            // Map and create other nested relations
             itineraries: itineraries?.length
-              ? {
-                  create: itineraries,
-                }
+              ? { create: itineraries }
               : undefined,
             availabilities: availabilities?.length
-              ? {
-                  create: availabilities,
-                }
+              ? { create: availabilities }
+              : undefined,
+            highlights: highlights?.length ? { create: highlights } : undefined,
+            features: features?.length ? { create: features } : undefined,
+            faqs: faqs?.length ? { create: faqs } : undefined,
+            additionalServices: additionalServices?.length
+              ? { create: additionalServices }
               : undefined,
           },
           include: {
             images: true,
             itineraries: true,
             availabilities: true,
+            highlights: true,
+            features: true,
+            faqs: true,
+            additionalServices: true,
           },
         });
       });
@@ -54,37 +72,35 @@ export class TripsService {
     }
   }
 
+  /**
+   * 2. Find All Trips (Data Projection for performance)
+   */
   async findAll() {
     try {
-      // Using 'select' to perform data projection for better performance
-      const trips = await this.prisma.trip.findMany({
+      return await this.prisma.trip.findMany({
         select: {
-          id: true, // Unique identifier
-          name: true, // Name of the trip
-          location: true, // Geographical location
-          price: true, // Trip cost (Decimal)
-          duration: true, // e.g., "3 Days 2 Nights"
-          label: true, // e.g., "FEATURED", "DISCOUNT"
-          // rating: true,    // Uncomment if rating field exists in your schema
+          id: true,
+          name: true,
+          location: true,
+          price: true,
+          duration: true,
+          label: true,
+          category: true,
           images: {
-            // Fetching all associated images
-            select: {
-              id: true,
-              url: true,
-            },
+            select: { id: true, url: true },
           },
         },
-        orderBy: {
-          createdAt: 'desc', // Show newest trips first (Industrial Standard)
-        },
+        orderBy: { createdAt: 'desc' },
       });
-
-      return trips;
     } catch (error) {
       this.logger.error(`Failed to fetch trips: ${error.message}`);
       throw new InternalServerErrorException('Could not retrieve trip data.');
     }
   }
+
+  /**
+   * 3. Find One Trip by ID (Includes all relations)
+   */
   async findOne(id: string): Promise<TripEntity> {
     const trip = await this.prisma.trip.findUnique({
       where: { id },
@@ -92,6 +108,10 @@ export class TripsService {
         images: true,
         itineraries: true,
         availabilities: true,
+        highlights: true,
+        features: true,
+        faqs: true,
+        additionalServices: true,
       },
     });
 
@@ -103,43 +123,65 @@ export class TripsService {
   }
 
   /**
-   * 4. Update trip (Returns TripEntity)
+   * 4. Update Trip (Deletes old nested records and creates new ones)
    */
   async updateTrip(
     id: string,
-    cerateTripDto: UpdateTripDto,
+    updateTripDto: UpdateTripDto, // Ensure naming is consistent
   ): Promise<TripEntity> {
-    // First ensure that the trip exists
+    // 1. Ensure the trip exists
     await this.findOne(id);
 
+    // console.log('1. Controller received ID:', id);
+    // console.log(
+    //   '2. Controller received Body:',
+    //   JSON.stringify(updateTripDto, null, 2),
+    // );
+
     try {
-      const { imageUrls, itineraries, availabilities, ...tripDetails } =
-        cerateTripDto;
+      // 2. Destructure EVERYTHING properly
+      // We separate arrays (relations) from the main trip object (tripDetails)
+      const {
+        imageUrls,
+        itineraries,
+        availabilities,
+        highlights,
+        features,
+        faqs,
+        additionalServices,
+        ...tripDetails // This MUST contain name, price, description, etc.
+      } = updateTripDto;
 
       const updatedTrip = await this.prisma.$transaction(async (tx) => {
-        // If images or itineraries are provided, delete old ones and set new ones (Industrial Standard)
-        if (imageUrls) await tx.tripImage.deleteMany({ where: { tripId: id } });
-        if (itineraries)
-          await tx.itinerary.deleteMany({ where: { tripId: id } });
-        if (availabilities)
-          await tx.tripAvailability.deleteMany({ where: { tripId: id } });
+        // 3. Handle Relational Updates
+        // We only delete/recreate if the user actually provided them (not undefined)
+        if (imageUrls !== undefined) {
+          await tx.tripImage.deleteMany({ where: { tripId: id } });
+          await tx.tripImage.createMany({
+            data: imageUrls.map((url) => ({ url, tripId: id })),
+          });
+        }
 
+        if (itineraries !== undefined) {
+          await tx.itinerary.deleteMany({ where: { tripId: id } });
+          await tx.itinerary.createMany({
+            data: itineraries.map((item) => ({ ...item, tripId: id })),
+          });
+        }
+
+        // 4. Update the main Trip record
+        // This is the part that updates 'name', 'price', 'location', etc.
         return await tx.trip.update({
           where: { id },
-          data: {
-            ...tripDetails,
-            images: imageUrls
-              ? { create: imageUrls.map((url) => ({ url })) }
-              : undefined,
-            itineraries: itineraries ? { create: itineraries } : undefined,
-            availabilities: availabilities
-              ? { create: availabilities }
-              : undefined,
-          },
+          data: tripDetails, // This object must NOT be empty
           include: {
             images: true,
             itineraries: true,
             availabilities: true,
+            highlights: true,
+            features: true,
+            faqs: true,
+            additionalServices: true,
           },
         });
       });
@@ -147,13 +189,17 @@ export class TripsService {
       return new TripEntity(updatedTrip);
     } catch (error) {
       this.logger.error(`Update failed for trip ${id}: ${error.message}`);
-      throw new InternalServerErrorException('Update failed');
+      throw new InternalServerErrorException(
+        'Update failed - check database constraints',
+      );
     }
   }
 
+  /**
+   * 5. Delete Trip
+   */
   async deleteTrip(id: string): Promise<{ message: string }> {
     await this.findOne(id);
-
     try {
       await this.prisma.trip.delete({ where: { id } });
       return { message: 'Trip deleted successfully' };
