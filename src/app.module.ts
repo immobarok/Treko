@@ -16,9 +16,17 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { MinioModule } from './common/minio/minio.module';
 import { TripsModule } from './trips/trips.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
-  imports: [ContextModule, ConfigModule.forRoot(), AuthModule, MinioModule, TripsModule],
+  imports: [
+    ContextModule,
+    ConfigModule.forRoot(),
+    AuthModule,
+    MinioModule,
+    TripsModule,
+    CategoryModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,

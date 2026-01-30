@@ -23,7 +23,6 @@ export class CreateCategoryDto {
   @IsUrl()
   @IsOptional()
   image?: string;
-
   @IsInt()
   @IsOptional()
   order?: number;
