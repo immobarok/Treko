@@ -8,15 +8,22 @@ import {
 import { PrismaService } from 'src/common/context/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update.category.dto';
+import { MinioService } from 'src/common/minio/minio.service';
 
 @Injectable()
 export class CategoryService {
   private readonly logger = new Logger(CategoryService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private minioService: MinioService,
+  ) {}
 
-  async createCategory(createCategory: CreateCategoryDto) {
-    const { name, slug, image, order, isActive, places } = createCategory;
+  async createCategory(
+    createCategory: CreateCategoryDto,
+    file: Express.Multer.File,
+  ) {
+    const { name, slug, order, isActive, places } = createCategory;
 
     // 1. Check for duplicates
     const existing = await this.prisma.category.findFirst({
@@ -25,16 +32,21 @@ export class CategoryService {
     if (existing)
       throw new ConflictException('Category name or slug already exists');
 
+    // 2. Upload to MinIO
+    let categoryImageUrl = createCategory.image;
+    if (file) {
+      categoryImageUrl = await this.minioService.uploadFile(file);
+    }
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         return await tx.category.create({
           data: {
             name,
             slug,
-            image,
+            image: categoryImageUrl,
             order,
             isActive,
-            // Create Places (Cities)
             places: {
               create: places?.map((place) => ({
                 name: place.name,
@@ -49,7 +61,6 @@ export class CategoryService {
                 visaRequired: place.visaRequired,
                 order: place.order,
                 isFeatured: place.isFeatured,
-                // Create Place Details (JSON + Nested Relations)
                 details: place.details
                   ? {
                       create: {
@@ -81,7 +92,6 @@ export class CategoryService {
               })),
             },
           },
-          // 3. Return the full data structure so you can see it in Postman
           include: {
             places: {
               include: {
@@ -98,23 +108,19 @@ export class CategoryService {
       });
     } catch (error) {
       this.logger.error(`Database Error: ${error.message}`);
-      throw new InternalServerErrorException(
-        'Failed to create category and nested places',
-      );
+      throw new InternalServerErrorException('Failed to create category');
     }
   }
-  //------------findAllCategories----------------//
+
   async findAllCategories() {
     return this.prisma.category.findMany({
-      include: {
-        _count: { select: { places: true } },
-      },
+      include: { _count: { select: { places: true } } },
       orderBy: { order: 'asc' },
     });
   }
 
   async findCategoryBySlug(slug: string) {
-    return this.prisma.category.findUnique({
+    const category = await this.prisma.category.findUnique({
       where: { slug },
       include: {
         places: {
@@ -129,13 +135,14 @@ export class CategoryService {
         },
       },
     });
+    if (!category) throw new NotFoundException('Category not found');
+    return category;
   }
 
-  async update(id: string, data: UpdateCategoryDto) {
+  async updateCategory(id: string, data: UpdateCategoryDto) {
     const category = await this.prisma.category.findUnique({ where: { id } });
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
+    if (!category) throw new NotFoundException('Category not found');
+
     return this.prisma.category.update({
       where: { id },
       data: data,
@@ -144,9 +151,18 @@ export class CategoryService {
 
   async delete(id: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });
-    if (!category) {
-      throw new NotFoundException('Delete Category not found');
+    if (!category) throw new NotFoundException('Category not found');
+
+    // 1. Delete from MinIO if image exists
+    if (category.image) {
+      try {
+        await this.minioService.deleteFile(category.image);
+      } catch (e) {
+        this.logger.warn(`Failed to delete file from MinIO: ${category.image}`);
+      }
     }
+
+    // 2. Delete from Database
     return this.prisma.category.delete({ where: { id } });
   }
 }

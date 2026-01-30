@@ -88,4 +88,27 @@ export class MinioService implements OnModuleInit {
       throw new InternalServerErrorException('File upload failed');
     }
   }
+
+  /**
+   * Deletes a file from MinIO bucket
+   * @param fileUrl The full URL of the file stored in the database
+   */
+  async deleteFile(fileUrl: string): Promise<void> {
+    try {
+      // 1. Extract the filename from the full URL
+      // Example: http://localhost:9000/travel-bucket/12345-image.jpg -> 12345-image.jpg
+      const urlParts = fileUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+
+      if (!fileName) return;
+
+      // 2. Remove the object from the bucket
+      await this.minioClient.removeObject(this.bucketName, fileName);
+      this.logger.log(`File deleted from MinIO: ${fileName}`);
+    } catch (error) {
+      this.logger.error('Failed to delete file from MinIO', error.stack);
+      // We don't necessarily want to crash the whole request if a file delete fails,
+      // but we log it for admin investigation.
+    }
+  }
 }
