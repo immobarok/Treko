@@ -56,48 +56,56 @@ model User {
 }
 
 model Trip {
-  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  description     String         @db.Text
-  location        String
-  duration        String
-  tour_type       TourType
-  label           TripLabel?
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  description      String           @db.Text
+  location         String
+  duration         String
+  tour_type        TourType
+  label            TripLabel?
   
   // Pricing
-  price           Decimal        @db.Decimal(10, 2)
-  discount_price  Decimal?       @db.Decimal(10, 2)
-  discount_percent Int?          //
+  price            Decimal          @db.Decimal(10, 2)
+  discount_price   Decimal?         @db.Decimal(10, 2)
+  discount_percent Int?             
 
   // About Tour Package
-  accommodation   String   
-  meals           String   
-  transportation  String   
-  group_size      String   
-  language        String   
-  age_range       String   
-  season          String   
-  category        String   
+  accommodation    String   
+  meals            String   
+  transportation   String   
+  group_size       String   
+  language         String   
+  age_range        String   
+  season           String   
+  
+  // Existing category string (tagging)
+  category         String   
+
+  // --- NEW: Country Relationship ---
+  // This links the trip to "Bangladesh", "Africa", etc.
+  countryId        String?          @db.Uuid @map("country_id")
+  country          Category?        @relation(fields: [countryId], references: [id])
 
   // Additional Details
-  brochure_url    String?  
-  additional_info String?        @db.Text 
+  brochure_url     String?  
+  additional_info  String?          @db.Text 
 
   // Relations
-  images          TripImage[]
-  highlights      Highlight[]      //
-  itineraries     Itinerary[]      //
-  features        PackageFeature[] //
-  faqs            Faq[]            //
-  reviews         Review[]         //
-  availabilities  TripAvailability[] //
-  additionalServices AdditionalService[] //
-  bookings        Booking[]
+  images           TripImage[]
+  highlights       Highlight[]      
+  itineraries      Itinerary[]      
+  features         PackageFeature[] 
+  faqs             Faq[]            
+  reviews          Review[]         
+  availabilities   TripAvailability[] 
+  additionalServices AdditionalService[] 
+  bookings         Booking[]
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@index([category])
+  @@index([countryId]) // Index for fast filtering by country
   @@index([tour_type])
   @@map("trips")
 }
@@ -230,4 +238,71 @@ model Booking {
   createdAt     DateTime      @default(now()) @db.Timestamptz
 
   @@map("bookings")
+}
+
+model Category {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String           @unique
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  trips        Trip[]           // Ai country-r shob tour packages
+  places       Place[]          // NEW: Bangladesh-er under-e Dhaka, Rajshahi, etc.
+
+  @@map("categories")
+}
+
+model Place {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String           // e.g., "Dhaka"
+  image       String           // Main image for the place
+  
+  // Relations
+  categoryId  String           @db.Uuid @map("category_id")
+  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  // Place specific details (Popular spots, experiences, weather)
+  details     PlaceDetails?
+
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("places")
+}
+
+model PlaceDetails {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  placeId           String           @unique @db.Uuid @map("place_id")
+  place             Place            @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  // As per your requirement
+  popular_places     Json?            // Stores [{name: "Sajek", image: "url"}]
+  customer_experiences CustomerExperience[]
+  seasonal_info      SeasonalInfo[]   // Best time to visit info
+
+  @@map("place_details")
+}
+
+model CustomerExperience {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  image             String           
+  description       String           @db.Text
+  placeDetailsId    String           @db.Uuid @map("place_details_id")
+  placeDetails      PlaceDetails  @relation(fields: [placeDetailsId], references: [id], onDelete: Cascade)
+
+  @@map("customer_experiences")
+}
+
+model SeasonalInfo {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  season            String           
+  weather_celsius    String           
+  weather_fahrenheit String           
+  highlights        String[]         
+  perfect_for       String[]         
+  image             String?          
+  placeDetailsId    String           @db.Uuid @map("place_details_id")
+  placeDetails      PlaceDetails  @relation(fields: [placeDetailsId], references: [id], onDelete: Cascade)
+
+  @@map("seasonal_info")
 }
