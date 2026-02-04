@@ -12,70 +12,119 @@ import { CreateBookingDto } from './dto/create.booking.dto';
 export class BookingtripService {
   private readonly logger = new Logger(BookingtripService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async createBookingTrip(createBooking: CreateBookingDto) {
+    /* -------------------------------------------------------
+       1️⃣ Validate & normalize travel date
+    ------------------------------------------------------- */
     const travelDate = new Date(createBooking.travelDate);
     if (isNaN(travelDate.getTime())) {
       throw new BadRequestException('Invalid travel date format.');
     }
+    // Normalize to midnight UTC to match DB availability dates
+    travelDate.setUTCHours(0, 0, 0, 0);
 
-    // Business logic: Check if trip exists
+    /* -------------------------------------------------------
+       2️⃣ Check if trip exists
+    ------------------------------------------------------- */
     const trip = await this.prisma.trip.findUnique({
       where: { id: createBooking.tripId },
+      select: { id: true },
     });
+
     if (!trip) {
       throw new NotFoundException('Trip not found.');
     }
 
-    // Business logic: Check availability (example: if trip has capacity)
-    // Assume Trip model has a 'capacity' field; adjust as needed
-    const existingBookings = await this.prisma.booking.count({
+    /* -------------------------------------------------------
+       3️⃣ Find availability for selected date
+    ------------------------------------------------------- */
+    const availability = await this.prisma.tripAvailability.findFirst({
       where: {
         tripId: createBooking.tripId,
-        travelDate: travelDate,
-        status: 'CONFIRMED', // Adjust based on your enum
+        date: travelDate,
       },
     });
-    if (
-      existingBookings + createBooking.adults + createBooking.children >
-      trip.capacity
-    ) {
+
+    if (!availability) {
+      throw new NotFoundException(
+        'No availability found for the selected trip and date.',
+      );
+    }
+
+    /* -------------------------------------------------------
+       4️⃣ Calculate requested seats
+    ------------------------------------------------------- */
+    const adults = createBooking.adults ?? 0;
+    const children = createBooking.children ?? 0;
+    const requestedSeats = adults + children;
+
+    if (requestedSeats <= 0) {
+      throw new BadRequestException(
+        'At least one traveler (adult or child) is required.',
+      );
+    }
+
+    /* -------------------------------------------------------
+       5️⃣ Check availability capacity
+    ------------------------------------------------------- */
+    if (availability.bookedCount + requestedSeats > availability.maxTravelers) {
       throw new ConflictException(
         'Not enough availability for the selected trip and date.',
       );
     }
 
-    // Optional: Check if user exists (if userId is provided)
+    /* -------------------------------------------------------
+       6️⃣ Optional: Check user existence
+    ------------------------------------------------------- */
     if (createBooking.userId) {
-      const user = await this.prisma.user.findUnique({
+      const userExists = await this.prisma.user.findUnique({
         where: { id: createBooking.userId },
+        select: { id: true },
       });
-      if (!user) {
+
+      if (!userExists) {
         throw new NotFoundException('User not found.');
       }
     }
 
+    /* -------------------------------------------------------
+       7️⃣ Transaction: create booking + update availability
+    ------------------------------------------------------- */
     try {
-      // Use a transaction for atomicity (e.g., if payment is involved later)
       const booking = await this.prisma.$transaction(async (tx) => {
-        return await tx.booking.create({
+        const createdBooking = await tx.booking.create({
           data: {
             ...createBooking,
-            travelDate: travelDate, // Ensure it's a Date object
+            travelDate,
           },
         });
+
+        await tx.tripAvailability.update({
+          where: { id: availability.id },
+          data: {
+            bookedCount: {
+              increment: requestedSeats,
+            },
+          },
+        });
+
+        return createdBooking;
       });
 
       this.logger.log(`Booking created successfully: ${booking.id}`);
       return booking;
     } catch (error) {
-      this.logger.error(`Database Error: ${error.message}`, error.stack);
-      // Throw specific exceptions based on error type
+      this.logger.error(
+        `Booking creation failed: ${error.message}`,
+        error.stack,
+      );
+
       if (error.code === 'P2002') {
-        // Prisma unique constraint error
-        throw new ConflictException('Booking already exists for this data.');
+        throw new ConflictException('Duplicate booking detected.');
       }
+
       throw new BadRequestException(
         'Failed to create booking due to database error.',
       );
