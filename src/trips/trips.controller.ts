@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Req,
+  Query,
 } from '@nestjs/common';
 import { TripsService } from './trips.service';
 import { CreateTripDto } from './dto/create-trip.dto';
@@ -22,10 +23,10 @@ export class TripsController {
   }
 
   @Get()
-  findAll() {
-    return this.tripsService.findAll();
+  async findAll(@Query('search') s: string, @Query('location') l: string) {
+    return this.tripsService.findAll(s, l); // Ensure 's' and 'l' are passed here!
   }
-
+  
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tripsService.findOne(id);

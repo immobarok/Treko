@@ -75,9 +75,32 @@ export class TripsService {
   /**
    * 2. Find All Trips (Data Projection for performance)
    */
-  async findAll() {
+  async findAll(searchTerm?: string, location?: string) {
     try {
+      // Console log diye check korun params thikmoto pouchachche kina
+      console.log('Search Params in Service:', { searchTerm, location });
+
       return await this.prisma.trip.findMany({
+        where: {
+          AND: [
+            searchTerm
+              ? {
+                  name: {
+                    contains: searchTerm,
+                    mode: 'insensitive',
+                  },
+                }
+              : {},
+            location
+              ? {
+                  location: {
+                    contains: location,
+                    mode: 'insensitive',
+                  },
+                }
+              : {},
+          ],
+        },
         select: {
           id: true,
           name: true,
