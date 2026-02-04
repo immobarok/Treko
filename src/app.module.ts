@@ -17,6 +17,7 @@ import { AuthModule } from './auth/auth.module';
 import { MinioModule } from './common/minio/minio.module';
 import { TripsModule } from './trips/trips.module';
 import { CategoryModule } from './category/category.module';
+import { BookingtripModule } from './bookingtrip/bookingtrip.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CategoryModule } from './category/category.module';
     MinioModule,
     TripsModule,
     CategoryModule,
+    BookingtripModule,
   ],
   controllers: [AppController],
   providers: [

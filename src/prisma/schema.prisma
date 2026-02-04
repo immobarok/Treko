@@ -91,6 +91,7 @@ model Trip {
   availabilities   TripAvailability[] 
   additionalServices AdditionalService[] 
   bookings         Booking[]
+  capacity         Int      @default(0)
 
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
