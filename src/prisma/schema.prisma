@@ -341,3 +341,37 @@ model SeasonalInfo {
 
   @@map("seasonal_info")
 }
+
+
+model ServiceSection {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  heading    String
+  subHeading String?
+  isActive   Boolean  @default(true)
+
+  features   ServiceFeature[]
+
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([isActive])
+}
+
+model ServiceFeature {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String
+  icon        String
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  sectionId   String   @db.Uuid @map("section_id")
+  section     ServiceSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([sectionId, isActive])
+  @@unique([sectionId, order])
+}
+
