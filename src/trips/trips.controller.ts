@@ -25,7 +25,12 @@ export class TripsController {
   async findAll(@Query('search') s: string, @Query('location') l: string) {
     return this.tripsService.findAll(s, l);
   }
-  
+
+  @Get('one-day-trips')
+  findOneDayTrips() {
+    return this.tripsService.findOneDayTrips();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tripsService.findOne(id);

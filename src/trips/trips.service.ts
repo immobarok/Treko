@@ -8,6 +8,7 @@ import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { TripEntity } from './entities/trip.entity';
 import { PrismaService } from 'src/common/context/prisma.service';
+import { Prisma } from 'src/generated/prisma/client';
 
 @Injectable()
 export class TripsService {
@@ -66,7 +67,7 @@ export class TripsService {
       });
 
       return new TripEntity(result);
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Failed to create trip: ${error.message}`);
       throw new InternalServerErrorException('Could not create trip');
     }
@@ -116,8 +117,48 @@ export class TripsService {
         orderBy: { createdAt: 'desc' },
       });
     } catch (error) {
-      this.logger.error(`Failed to fetch trips: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to fetch trips: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       throw new InternalServerErrorException('Could not retrieve trip data.');
+    }
+  }
+
+  //get one day trips
+  async findOneDayTrips() {
+    try {
+      const trips = await this.prisma.trip.findMany({
+        where: {
+          duration: {
+            contains: 'one day',
+            mode: 'insensitive',
+          },
+        },
+      });
+      if (trips.length === 0) {
+        throw new NotFoundException('No one day trips found');
+      }
+      return trips;
+    } catch (error: unknown) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        this.logger.error(
+          `Prisma error ${error.code} in findOneDayTrips: ${error.message}`,
+        );
+        // Map known codes if you want more specific responses
+        throw new InternalServerErrorException(
+          'Database error while retrieving one day trips.',
+          { cause: error },
+        );
+      }
+
+      this.logger.error(`Failed to fetch one day trips: ${String(error)}`);
+      throw new InternalServerErrorException(
+        'Could not retrieve one day trip data.',
+        { cause: error as Error },
+      );
     }
   }
 
@@ -210,7 +251,7 @@ export class TripsService {
       });
 
       return new TripEntity(updatedTrip);
-    } catch (error:any) {
+    } catch (error: any) {
       this.logger.error(`Update failed for trip ${id}: ${error.message}`);
       throw new InternalServerErrorException(
         'Update failed - check database constraints',
