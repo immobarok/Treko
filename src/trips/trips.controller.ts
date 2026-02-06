@@ -6,7 +6,6 @@ import {
   Patch,
   Param,
   Delete,
-  Req,
   Query,
 } from '@nestjs/common';
 import { TripsService } from './trips.service';
@@ -24,7 +23,7 @@ export class TripsController {
 
   @Get()
   async findAll(@Query('search') s: string, @Query('location') l: string) {
-    return this.tripsService.findAll(s, l); // Ensure 's' and 'l' are passed here!
+    return this.tripsService.findAll(s, l);
   }
   
   @Get(':id')

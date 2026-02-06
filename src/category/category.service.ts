@@ -106,7 +106,7 @@ export class CategoryService {
           },
         });
       });
-    } catch (error) {
+    } catch (error:any) {
       this.logger.error(`Database Error: ${error.message}`);
       throw new InternalServerErrorException('Failed to create category');
     }

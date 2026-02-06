@@ -116,12 +116,13 @@ export class BookingtripService {
       this.logger.log(`Booking created successfully: ${booking.id}`);
       return booking;
     } catch (error) {
+      const err = error as any;
       this.logger.error(
-        `Booking creation failed: ${error.message}`,
-        error.stack,
+        `Booking creation failed: ${err.message}`,
+        err.stack,
       );
 
-      if (error.code === 'P2002') {
+      if (err.code === 'P2002') {
         throw new ConflictException('Duplicate booking detected.');
       }
 

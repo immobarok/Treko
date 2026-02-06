@@ -66,7 +66,7 @@ export class TripsService {
       });
 
       return new TripEntity(result);
-    } catch (error) {
+    } catch (error:any) {
       this.logger.error(`Failed to create trip: ${error.message}`);
       throw new InternalServerErrorException('Could not create trip');
     }
@@ -116,7 +116,7 @@ export class TripsService {
         orderBy: { createdAt: 'desc' },
       });
     } catch (error) {
-      this.logger.error(`Failed to fetch trips: ${error.message}`);
+      this.logger.error(`Failed to fetch trips: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw new InternalServerErrorException('Could not retrieve trip data.');
     }
   }
@@ -210,7 +210,7 @@ export class TripsService {
       });
 
       return new TripEntity(updatedTrip);
-    } catch (error) {
+    } catch (error:any) {
       this.logger.error(`Update failed for trip ${id}: ${error.message}`);
       throw new InternalServerErrorException(
         'Update failed - check database constraints',

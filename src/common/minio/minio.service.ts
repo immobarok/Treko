@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import * as Minio from 'minio';
 import { ConfigService } from '@nestjs/config';
+import 'multer';
 
 @Injectable()
 export class MinioService implements OnModuleInit {
@@ -60,7 +61,7 @@ export class MinioService implements OnModuleInit {
         );
         this.logger.log(`Bucket "${this.bucketName}" created and policy set.`);
       }
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('MinIO Bucket Initialization failed', error.stack);
     }
   }
@@ -83,7 +84,7 @@ export class MinioService implements OnModuleInit {
       const port = this.configService.get<string>('MINIO_PORT');
 
       return `http://${endPoint}:${port}/${this.bucketName}/${fileName}`;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('File upload to MinIO failed', error.stack);
       throw new InternalServerErrorException('File upload failed');
     }
@@ -105,7 +106,7 @@ export class MinioService implements OnModuleInit {
       // 2. Remove the object from the bucket
       await this.minioClient.removeObject(this.bucketName, fileName);
       this.logger.log(`File deleted from MinIO: ${fileName}`);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Failed to delete file from MinIO', error.stack);
       // We don't necessarily want to crash the whole request if a file delete fails,
       // but we log it for admin investigation.
