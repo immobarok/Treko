@@ -14,12 +14,11 @@ async function bootstrap() {
     new AllExceptionsFilter(httpAdapterHost, contextService),
   );
 
-  app.setGlobalPrefix('api/v1');
-
-
+  app.setGlobalPrefix('api');
 
   app.enableVersioning({
     type: VersioningType.URI,
+    defaultVersion: '1',
   });
 
   await app.listen(process.env.PORT ?? 3000);

@@ -18,8 +18,6 @@ import { MinioModule } from './common/minio/minio.module';
 import { TripsModule } from './trips/trips.module';
 import { CategoryModule } from './category/category.module';
 import { BookingtripModule } from './bookingtrip/bookingtrip.module';
-import { BestserviceService } from './bestservice/bestservice.service';
-import { BestserviceController } from './bestservice/bestservice.controller';
 import { BestserviceModule } from './bestservice/bestservice.module';
 import { ContactModule } from './contact/contact.module';
 
@@ -35,7 +33,7 @@ import { ContactModule } from './contact/contact.module';
     BestserviceModule,
     ContactModule,
   ],
-  controllers: [AppController, BestserviceController],
+  controllers: [AppController],
   providers: [
     AppService,
     {
@@ -57,7 +55,6 @@ import { ContactModule } from './contact/contact.module';
       }),
     },
     Reflector,
-    BestserviceService,
   ],
 })
 export class AppModule implements NestModule {

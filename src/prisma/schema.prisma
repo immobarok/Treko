@@ -379,6 +379,7 @@ model ServiceFeature {
 model ContactSection {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   offices   ContactOffice[]
+  messages  ContactMessage[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
@@ -400,5 +401,22 @@ model ContactOffice {
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("contact_offices")
+}
+
+model ContactMessage {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  email         String
+  phoneNumber   String
+  message       String   @db.Text
+  destination   String?
+  agreeToPolicy Boolean  @default(false)
+
+  sectionId     String?  @db.Uuid @map("section_id")
+  section       ContactSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("contact_messages")
 }
 
