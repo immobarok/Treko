@@ -18,7 +18,7 @@ import { TourType, TripLabel } from 'src/generated/prisma/enums';
 class HighlightDto {
   @IsString()
   @IsNotEmpty()
-  text: string;
+  text: string = '';
 }
 
 /**
@@ -27,11 +27,11 @@ class HighlightDto {
 class PackageFeatureDto {
   @IsString()
   @IsNotEmpty()
-  text: string;
+  text: string = '';
 
   @IsBoolean()
   @IsNotEmpty()
-  isInclude: boolean;
+  isInclude: boolean = false;
 }
 
 /**
@@ -40,11 +40,11 @@ class PackageFeatureDto {
 class FaqDto {
   @IsString()
   @IsNotEmpty()
-  question: string;
+  question: string = '';
 
   @IsString()
   @IsNotEmpty()
-  answer: string;
+  answer: string = '';
 }
 
 /**
@@ -53,15 +53,15 @@ class FaqDto {
 class AdditionalServiceDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name: string = '';
 
   @IsNumber()
   @IsNotEmpty()
-  price: number;
+  price: number = 0;
 
   @IsString()
   @IsNotEmpty()
-  unit: string;
+  unit: string = '';
 }
 
 /**
@@ -70,15 +70,15 @@ class AdditionalServiceDto {
 class ItineraryDto {
   @IsNumber()
   @IsNotEmpty()
-  dayNumber: number;
+  dayNumber: number = 0;
 
   @IsString()
   @IsNotEmpty()
-  location: string;
+  location: string = '';
 
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title: string = '';
 
   @IsOptional()
   @IsString()
@@ -91,41 +91,41 @@ class ItineraryDto {
 class AvailabilityDto {
   @Type(() => Date)
   @IsNotEmpty()
-  date: Date;
+  date: Date = new Date();
 
   @IsNumber()
   @IsNotEmpty()
-  maxTravelers: number;
+  maxTravelers: number = 0;
 
   @IsNumber()
   @IsNotEmpty()
-  adultPrice: number;
+  adultPrice: number = 0;
 
   @IsNumber()
   @IsNotEmpty()
-  childPrice: number;
+  childPrice: number = 0;
 }
 
 export class CreateTripDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name: string = '';
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description: string = '';
 
   @IsString()
   @IsNotEmpty()
-  location: string;
+  location: string = '';
 
   @IsString()
   @IsNotEmpty()
-  duration: string;
+  duration: string = '';
 
   @IsEnum(TourType)
   @IsNotEmpty()
-  tour_type: TourType;
+  tour_type!: TourType;  
 
   @IsOptional()
   @IsEnum(TripLabel)
@@ -134,7 +134,7 @@ export class CreateTripDto {
   // --- Pricing Fields ---
   @IsNumber()
   @IsNotEmpty()
-  price: number;
+  price: number = 0;
 
   @IsOptional()
   @IsNumber()
@@ -147,35 +147,35 @@ export class CreateTripDto {
   // --- Tour Details ---
   @IsString()
   @IsNotEmpty()
-  accommodation: string;
+  accommodation: string = '';
 
   @IsString()
   @IsNotEmpty()
-  meals: string;
+  meals: string = '';
 
   @IsString()
   @IsNotEmpty()
-  transportation: string;
+  transportation: string = '';
 
   @IsString()
   @IsNotEmpty()
-  group_size: string;
+  group_size: string = '';
 
   @IsString()
   @IsNotEmpty()
-  language: string;
+  language: string = '';
 
   @IsString()
   @IsNotEmpty()
-  age_range: string;
+  age_range: string = '';
 
   @IsString()
   @IsNotEmpty()
-  season: string;
+  season: string = '';
 
   @IsString()
   @IsNotEmpty()
-  category: string;
+  category?: string;
 
   // --- Additional Info ---
   @IsOptional()
@@ -191,41 +191,41 @@ export class CreateTripDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  imageUrls: string[];
+  imageUrls?: string[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => HighlightDto)
   @IsOptional()
-  highlights: HighlightDto[];
+  highlights?: HighlightDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ItineraryDto)
   @IsOptional()
-  itineraries: ItineraryDto[];
+  itineraries?: ItineraryDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PackageFeatureDto)
   @IsOptional()
-  features: PackageFeatureDto[];
+  features?: PackageFeatureDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => FaqDto)
   @IsOptional()
-  faqs: FaqDto[];
+  faqs?: FaqDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AvailabilityDto)
   @IsOptional()
-  availabilities: AvailabilityDto[];
+  availabilities?: AvailabilityDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AdditionalServiceDto)
   @IsOptional()
-  additionalServices: AdditionalServiceDto[];
+  additionalServices?: AdditionalServiceDto[];
 }

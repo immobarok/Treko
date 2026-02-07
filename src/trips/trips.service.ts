@@ -33,27 +33,46 @@ export class TripsService {
       } = createTripDto;
 
       const result = await this.prisma.$transaction(async (tx) => {
+        const data: any = {
+          ...Object.fromEntries(
+            Object.entries(tripDetails).filter(
+              ([, value]) => value !== undefined,
+            ),
+          ),
+        };
+
+        // Create nested images from the provided URL array
+        if (imageUrls?.length) {
+          data.images = { create: imageUrls.map((url) => ({ url })) };
+        }
+
+        // Map and create other nested relations
+        if (itineraries?.length) {
+          data.itineraries = { create: itineraries };
+        }
+
+        if (availabilities?.length) {
+          data.availabilities = { create: availabilities };
+        }
+
+        if (highlights?.length) {
+          data.highlights = { create: highlights };
+        }
+
+        if (features?.length) {
+          data.features = { create: features };
+        }
+
+        if (faqs?.length) {
+          data.faqs = { create: faqs };
+        }
+
+        if (additionalServices?.length) {
+          data.additionalServices = { create: additionalServices };
+        }
+
         return await tx.trip.create({
-          data: {
-            ...tripDetails,
-            // Create nested images from the provided URL array
-            images: imageUrls?.length
-              ? { create: imageUrls.map((url) => ({ url })) }
-              : undefined,
-            // Map and create other nested relations
-            itineraries: itineraries?.length
-              ? { create: itineraries }
-              : undefined,
-            availabilities: availabilities?.length
-              ? { create: availabilities }
-              : undefined,
-            highlights: highlights?.length ? { create: highlights } : undefined,
-            features: features?.length ? { create: features } : undefined,
-            faqs: faqs?.length ? { create: faqs } : undefined,
-            additionalServices: additionalServices?.length
-              ? { create: additionalServices }
-              : undefined,
-          },
+          data,
           include: {
             images: true,
             itineraries: true,

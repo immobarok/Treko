@@ -1,4 +1,8 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { BestserviceService } from './bestservice.service';
 
 @Controller('bestservice')
-export class BestserviceController {}
+export class BestserviceController {
+  constructor(private readonly bestserviceService: BestserviceService) {}
+  
+}
