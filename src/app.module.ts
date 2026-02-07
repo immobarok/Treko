@@ -21,6 +21,7 @@ import { BookingtripModule } from './bookingtrip/bookingtrip.module';
 import { BestserviceService } from './bestservice/bestservice.service';
 import { BestserviceController } from './bestservice/bestservice.controller';
 import { BestserviceModule } from './bestservice/bestservice.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BestserviceModule } from './bestservice/bestservice.module';
     CategoryModule,
     BookingtripModule,
     BestserviceModule,
+    ContactModule,
   ],
   controllers: [AppController, BestserviceController],
   providers: [

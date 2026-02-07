@@ -375,3 +375,30 @@ model ServiceFeature {
   @@unique([sectionId, order])
 }
 
+
+model ContactSection {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  offices   ContactOffice[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("contact_sections")
+}
+
+model ContactOffice {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String
+  contact      String
+  addressLine1 String
+  addressLine2 String
+
+  sectionId    String   @db.Uuid @map("section_id")
+  section      ContactSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("contact_offices")
+}
+
