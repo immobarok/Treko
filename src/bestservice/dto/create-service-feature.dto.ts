@@ -14,8 +14,9 @@ class CreateFeatureDto {
   @IsString()
   description!: string;
 
+  @IsOptional()
   @IsString()
-  icon!: string;
+  icon?: string;
 
   @IsOptional()
   order?: number;

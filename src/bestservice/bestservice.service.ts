@@ -2,28 +2,71 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/context/prisma.service';
 import { UpdateServiceFeatureDto } from './dto/update-service-feature.dto';
 import { CreateBestServiceDto } from './dto/create-service-feature.dto';
+import { MinioService } from 'src/common/minio/minio.service';
 
 @Injectable()
 export class BestserviceService {
   private readonly logger = new Logger(BestserviceService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly minioService: MinioService,
+  ) {}
 
-  async createBestService(dto: CreateBestServiceDto) {
+  async uploadIcon(file: Express.Multer.File) {
     try {
+      const url = await this.minioService.uploadFile(file);
+      return { url };
+    } catch (error) {
+      this.logger.error('Failed to upload icon', error);
+      throw error;
+    }
+  }
+
+  async createBestService(
+    dto: CreateBestServiceDto,
+    files?: Express.Multer.File[],
+  ) {
+    try {
+      const featuresWithIcons = await Promise.all(
+        dto.features.map(async (f, index) => {
+          let iconUrl = f.icon;
+
+          // Check if there's a file for this specific feature's icon
+          // Example fieldname: features[0][icon]
+          const specificFile = files?.find(
+            (file) => file.fieldname === `features[${index}][icon]`,
+          );
+
+          if (specificFile) {
+            iconUrl = await this.minioService.uploadFile(specificFile);
+          } else {
+            // Fallback to a global 'icon' field if specific one is not provided
+            const globalIconFile = files?.find(
+              (file) => file.fieldname === 'icon',
+            );
+            if (globalIconFile) {
+              iconUrl = await this.minioService.uploadFile(globalIconFile);
+            }
+          }
+
+          return {
+            title: f.title,
+            description: f.description,
+            icon: iconUrl || '',
+            order: f.order ?? index,
+            isActive: f.isActive ?? true,
+          };
+        }),
+      );
+
       return await this.prisma.serviceSection.create({
         data: {
           heading: dto.heading,
           subHeading: dto.subHeading,
           isActive: dto.isActive ?? true,
           features: {
-            create: dto.features.map((f, index) => ({
-              title: f.title,
-              description: f.description,
-              icon: f.icon,
-              order: f.order ?? index,
-              isActive: f.isActive ?? true,
-            })),
+            create: featuresWithIcons,
           },
         },
       });
