@@ -20,6 +20,8 @@ import { CategoryModule } from './category/category.module';
 import { BookingtripModule } from './bookingtrip/bookingtrip.module';
 import { BestserviceModule } from './bestservice/bestservice.module';
 import { ContactModule } from './contact/contact.module';
+import { AboutService } from './about/about.service';
+import { AboutModule } from './about/about.module';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { ContactModule } from './contact/contact.module';
     BookingtripModule,
     BestserviceModule,
     ContactModule,
+    AboutModule,
   ],
   controllers: [AppController],
   providers: [
@@ -55,6 +58,7 @@ import { ContactModule } from './contact/contact.module';
       }),
     },
     Reflector,
+    AboutService,
   ],
 })
 export class AppModule implements NestModule {

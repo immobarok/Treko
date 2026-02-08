@@ -1,100 +1,63 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
 datasource db {
   provider = "postgresql"
 }
 
-generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  moduleFormat  = "cjs"
-}
-
-enum Role {
-  USER
-  ADMIN
-}
-
-enum TourType {
-  SOLO
-  FAMILY
-}
-
-enum TripLabel {
-  SALE_ON
-  FEATURED
-}
-
-enum PaymentMethod {
-  CASH_ON_DELIVERY
-  ONLINE_PAYMENT
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-}
-
-// --- Models ---
-
 model User {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String   @unique
-  password  String   @map("password")
-  fullName  String?  @map("full_name")
-  avatarUrl String?  @map("avatar_url")
-  role      Role     @default(USER)
-
-  // Relations
-  reviews   Review[]
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String    @unique
+  password  String    @map("password")
+  fullName  String?   @map("full_name")
+  avatarUrl String?   @map("avatar_url")
+  role      Role      @default(USER)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   bookings  Booking[]
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  reviews   Review[]
 
   @@map("users")
 }
 
 model Trip {
-  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  description      String           @db.Text
-  location         String
-  duration         String
-  tour_type        TourType
-  label            TripLabel?
-  
-  // Pricing
-  price            Decimal          @db.Decimal(10, 2)
-  discount_price   Decimal?         @db.Decimal(10, 2)
-  discount_percent Int?             
-
-  // About Tour Package
-  accommodation    String   
-  meals            String   
-  transportation   String   
-  group_size       String   
-  language         String   
-  age_range        String   
-  season           String   
-  category         String   
-
-  placeId          String?          @db.Uuid @map("place_id")
-  place            Place?           @relation(fields: [placeId], references: [id], onDelete: SetNull)
-  brochure_url     String?  
-  additional_info  String?          @db.Text 
-  images           TripImage[]
-  highlights       Highlight[]      
-  itineraries      Itinerary[]      
-  features         PackageFeature[] 
-  faqs             Faq[]            
-  reviews          Review[]         
-  availabilities   TripAvailability[] 
-  additionalServices AdditionalService[] 
-  bookings         Booking[]
-  capacity         Int      @default(0)
-
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  description        String
+  location           String
+  duration           String
+  tour_type          TourType
+  label              TripLabel?
+  price              Decimal             @db.Decimal(10, 2)
+  discount_price     Decimal?            @db.Decimal(10, 2)
+  discount_percent   Int?
+  accommodation      String
+  meals              String
+  transportation     String
+  group_size         String
+  language           String
+  age_range          String
+  season             String
+  category           String
+  brochure_url       String?
+  additional_info    String?
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  placeId            String?             @map("place_id") @db.Uuid
+  capacity           Int                 @default(0)
+  additionalServices AdditionalService[]
+  bookings           Booking[]
+  faqs               Faq[]
+  highlights         Highlight[]
+  itineraries        Itinerary[]
+  features           PackageFeature[]
+  reviews            Review[]
+  availabilities     TripAvailability[]
+  images             TripImage[]
+  place              Place?              @relation(fields: [placeId], references: [id])
 
   @@index([category])
   @@index([placeId])
@@ -116,7 +79,7 @@ model Itinerary {
   dayNumber   Int
   location    String
   title       String
-  description String? @db.Text
+  description String?
   tripId      String  @db.Uuid
   trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
@@ -145,7 +108,7 @@ model Highlight {
 model Faq {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   question String
-  answer   String @db.Text
+  answer   String
   tripId   String @db.Uuid
   trip     Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
@@ -154,34 +117,31 @@ model Faq {
 
 model Review {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  comment     String   @db.Text
-  rating      Int    
-  overall     Float  
+  comment     String
+  rating      Int
+  overall     Float
   transport   Float
   food        Float
   hospitality Float
   destination Float
-  
   userId      String   @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
   tripId      String   @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
   trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-
-  createdAt   DateTime @default(now()) @db.Timestamptz
+  user        User     @relation(fields: [userId], references: [id])
 
   @@map("reviews")
 }
 
 model TripAvailability {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  date          DateTime
-  maxTravelers  Int      
-  bookedCount   Int      @default(0) 
-  adultPrice    Decimal  @db.Decimal(10, 2)
-  childPrice    Decimal  @db.Decimal(10, 2)
-
-  tripId        String   @db.Uuid
-  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date         DateTime
+  maxTravelers Int
+  bookedCount  Int      @default(0)
+  adultPrice   Decimal  @db.Decimal(10, 2)
+  childPrice   Decimal  @db.Decimal(10, 2)
+  tripId       String   @db.Uuid
+  trip         Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@map("trip_availabilities")
 }
@@ -191,7 +151,6 @@ model AdditionalService {
   name   String
   price  Decimal @db.Decimal(10, 2)
   unit   String
-  
   tripId String  @db.Uuid
   trip   Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
@@ -200,223 +159,303 @@ model AdditionalService {
 
 model Booking {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
-  email         String        
+  email         String
   firstName     String        @map("first_name")
   lastName      String        @map("last_name")
-  phone         String?       
-  country       String        
-  address       String        @db.Text
-  city          String        
-  state         String        
+  phone         String?
+  country       String
+  address       String
+  city          String
+  state         String
   zipCode       String        @map("zip_code")
-
   travelDate    DateTime      @map("travel_date")
   adults        Int           @default(1)
   children      Int           @default(0)
-  
   subtotal      Decimal       @db.Decimal(10, 2)
-  totalPrice    Decimal       @db.Decimal(10, 2) @map("total_price")
-
+  totalPrice    Decimal       @map("total_price") @db.Decimal(10, 2)
   paymentMethod PaymentMethod @map("payment_method")
   status        BookingStatus @default(PENDING)
-  orderNote     String?       @db.Text
-
+  orderNote     String?
   userId        String?       @db.Uuid
-  user          User?         @relation(fields: [userId], references: [id])
   tripId        String        @db.Uuid
+  createdAt     DateTime      @default(now()) @db.Timestamptz(6)
   trip          Trip          @relation(fields: [tripId], references: [id])
-
-  createdAt     DateTime      @default(now()) @db.Timestamptz
+  user          User?         @relation(fields: [userId], references: [id])
 
   @@map("bookings")
 }
 
-// ==================== CATEGORY/PLACE SYSTEM ====================
-
-// ✅ Category = Region/Country (Africa, Asia, Bangladesh)
 model Category {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String   @unique // "Africa", "Asia", "Bangladesh"
-  slug      String   @unique // ✅ ADDED: "africa", "asia", "bangladesh"
-  image     String?  // ✅ ADDED: Category main image
-  order     Int      @default(0) // ✅ ADDED: Display order
-  isActive  Boolean  @default(true) // ✅ ADDED: Active/Inactive
-  
-  // Relations
-  places    Place[]  // Places under this category
-  
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  image     String?
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  slug      String   @unique
+  places    Place[]
 
   @@map("categories")
 }
 
-// ✅ Place = Specific location (Dhaka, South Africa, Kenya)
 model Place {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String   // "Dhaka", "South Africa", "Kenya"
-  slug         String   @unique // ✅ ADDED: "dhaka", "south-africa"
-  image        String   // Main card image
-  bannerImage  String?  // ✅ ADDED: Hero banner for detail page
-  shortDesc    String?  // ✅ ADDED: Short description for card
-  
-  // ✅ ADDED: Place details (for country pages)
-  capital      String?  // "Pretoria", "Nairobi"
-  currency     String?  // "BDT", "ZAR", "KES"
-  language     String?  // "Bengali", "English, Afrikaans"
-  timezone     String?  // "GMT+6", "GMT+2"
-  visaRequired Boolean? @default(false)
-  restrictions String?  @db.Text
-  
-  // Category relation
-  categoryId   String   @db.Uuid @map("category_id")
-  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
-  // Display options
-  order        Int      @default(0) // ✅ ADDED: Display order
-  isFeatured   Boolean  @default(false) // ✅ ADDED: Show on homepage
-  
-  // Relations
-  details      PlaceDetails? // Popular places, experiences, weather
-  trips        Trip[]        // ✅ ADDED: Tours for this place
-  
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  image        String
+  categoryId   String        @map("category_id") @db.Uuid
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bannerImage  String?
+  capital      String?
+  currency     String?
+  isFeatured   Boolean       @default(false)
+  language     String?
+  order        Int           @default(0)
+  restrictions String?
+  shortDesc    String?
+  slug         String        @unique
+  timezone     String?
+  visaRequired Boolean?      @default(false)
+  details      PlaceDetails?
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  trips        Trip[]
 
   @@index([categoryId])
-  @@index([slug]) // ✅ ADDED: Index for slug queries
+  @@index([slug])
   @@map("places")
 }
 
-// ✅ PlaceDetails = Extended info for a place
 model PlaceDetails {
   id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  placeId              String               @unique @db.Uuid @map("place_id")
+  placeId              String               @unique @map("place_id") @db.Uuid
+  popular_places       Json?
+  customer_experiences CustomerExperience[]
   place                Place                @relation(fields: [placeId], references: [id], onDelete: Cascade)
-
-  // Popular spots in this place
-  popular_places       Json?                // [{name: "Sajek", image: "url", city: "Rangamati"}]
-  
-  // Relations
-  customer_experiences CustomerExperience[] // Customer reviews/activities
-  seasonal_info        SeasonalInfo[]       // Best time to visit
+  seasonal_info        SeasonalInfo[]
 
   @@map("place_details")
 }
 
-// ✅ CustomerExperience = Recent customer activities
 model CustomerExperience {
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customerName   String?      // ✅ ADDED: Customer name (optional)
-  image          String       // Customer photo
-  description    String       @db.Text // What they experienced
-  rating         Float?       // ✅ ADDED: Rating (optional)
-  visitDate      DateTime?    // ✅ ADDED: When they visited
-  
-  placeDetailsId String       @db.Uuid @map("place_details_id")
+  image          String
+  description    String
+  placeDetailsId String       @map("place_details_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  customerName   String?
+  rating         Float?
+  visitDate      DateTime?
   placeDetails   PlaceDetails @relation(fields: [placeDetailsId], references: [id], onDelete: Cascade)
-  
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz // ✅ ADDED
 
   @@map("customer_experiences")
 }
 
-// ✅ SeasonalInfo = Best time to visit
 model SeasonalInfo {
   id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  season             String       // "Spring (March-May)"
-  weather_celsius    String       // "12-20°C"
-  weather_fahrenheit String       // "53-68°F"
-  highlights         String[]     // ["Cherry blossoms", "Moderate crowds"]
-  perfect_for        String[]     // ["First-time travelers", "couples"]
-  image              String?      
-  order              Int          @default(0) // ✅ ADDED: Display order
-  
-  placeDetailsId     String       @db.Uuid @map("place_details_id")
+  season             String
+  weather_celsius    String
+  weather_fahrenheit String
+  highlights         String[]
+  perfect_for        String[]
+  image              String?
+  placeDetailsId     String       @map("place_details_id") @db.Uuid
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  order              Int          @default(0)
+  updatedAt          DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   placeDetails       PlaceDetails @relation(fields: [placeDetailsId], references: [id], onDelete: Cascade)
-  
-  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz // ✅ ADDED
-  updatedAt          DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz // ✅ ADDED
 
   @@map("seasonal_info")
 }
 
-
 model ServiceSection {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   heading    String
   subHeading String?
-  isActive   Boolean  @default(true)
-
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   features   ServiceFeature[]
-
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   @@index([isActive])
 }
 
 model ServiceFeature {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title       String
   description String
   icon        String
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-
-  sectionId   String   @db.Uuid @map("section_id")
+  order       Int            @default(0)
+  isActive    Boolean        @default(true)
+  sectionId   String         @map("section_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   section     ServiceSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  @@index([sectionId, isActive])
   @@unique([sectionId, order])
+  @@index([sectionId, isActive])
 }
 
-
 model ContactSection {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  offices   ContactOffice[]
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   messages  ContactMessage[]
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  offices   ContactOffice[]
 
   @@map("contact_sections")
 }
 
 model ContactOffice {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title        String
   contact      String
   addressLine1 String
   addressLine2 String
-
-  sectionId    String   @db.Uuid @map("section_id")
+  sectionId    String         @map("section_id") @db.Uuid
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   section      ContactSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("contact_offices")
 }
 
 model ContactMessage {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
   email         String
   phoneNumber   String
-  message       String   @db.Text
+  message       String
   destination   String?
-  agreeToPolicy Boolean  @default(false)
-
-  sectionId     String?  @db.Uuid @map("section_id")
-  section       ContactSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  agreeToPolicy Boolean         @default(false)
+  sectionId     String?         @map("section_id") @db.Uuid
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  section       ContactSection? @relation(fields: [sectionId], references: [id])
 
   @@map("contact_messages")
 }
+
+// schema.prisma
+
+model LandingPage {
+  id               Int              @id @default(autoincrement())
+  aboutSection     AboutSection?
+  bestServices     BestServices?
+  journeyTimeline  JourneyTimeline?
+  whyChooseUs      WhyChooseUs?
+  partners         Partner[]
+  videoSection     VideoSection?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model AboutSection {
+  id            Int         @id @default(autoincrement())
+  title         String
+  subtitle      String
+  description   String
+  founderName   String      // English Comment: Flat structure for simplicity
+  founderRole   String
+  signatureUrl  String
+  images        String[]    // Postgres supports string arrays
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id])
+  landingPageId Int         @unique
+}
+
+model BestServices {
+  id            Int           @id @default(autoincrement())
+  title         String
+  promoBanner   String
+  items         ServiceItem[]
+  landingPage   LandingPage   @relation(fields: [landingPageId], references: [id])
+  landingPageId Int           @unique
+}
+
+model ServiceItem {
+  id             Int          @id @default(autoincrement())
+  icon           String
+  label          String
+  desc           String
+  bestServices   BestServices @relation(fields: [bestServicesId], references: [id])
+  bestServicesId Int
+}
+
+model JourneyTimeline {
+  id            Int             @id @default(autoincrement())
+  title         String
+  description   String
+  historyTitle  String
+  historyDesc   String
+  events        TimelineEvent[]
+  landingPage   LandingPage     @relation(fields: [landingPageId], references: [id])
+  landingPageId Int             @unique
+}
+
+model TimelineEvent {
+  id                Int             @id @default(autoincrement())
+  year              Int
+  image             String
+  journeyTimeline   JourneyTimeline @relation(fields: [journeyTimelineId], references: [id])
+  journeyTimelineId Int
+}
+
+model WhyChooseUs {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String
+  features      Feature[]
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id])
+  landingPageId Int         @unique
+}
+
+model Feature {
+  id            Int         @id @default(autoincrement())
+  title         String
+  color         String
+  whyChooseUs   WhyChooseUs @relation(fields: [whyChooseUsId], references: [id])
+  whyChooseUsId Int
+}
+
+model Partner {
+  id            Int         @id @default(autoincrement())
+  name          String
+  logo          String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id])
+  landingPageId Int
+}
+
+model VideoSection {
+  id            Int         @id @default(autoincrement())
+  videoUrl      String
+  thumbnail     String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id])
+  landingPageId Int         @unique
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TourType {
+  SOLO
+  FAMILY
+}
+
+enum TripLabel {
+  SALE_ON
+  FEATURED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  ONLINE_PAYMENT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
 
